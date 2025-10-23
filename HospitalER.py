@@ -1,8 +1,9 @@
 import simpy
 import random
 
+# Define basic simulation setup
 RANDOM_SEED = 42
-ARRIVAL_RATE = 5
+ARRIVAL_RATE = 5  # average time between patient arrivals
 SERVICE_TIME = 8  # average treatment time
 NUM_DOCTORS = 2
 SIM_TIME = 60
