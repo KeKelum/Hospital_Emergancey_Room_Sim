@@ -55,16 +55,49 @@ def patient_arrival(env, doctors):
         i += 1
         env.process(patient(env, f"Patient {i}", doctors))
 
-random.seed(RANDOM_SEED)
-env = simpy.Environment()
-doctors = simpy.PriorityResource(env, capacity=NUM_DOCTORS)
-env.process(patient_arrival(env, doctors))
-env.run(until=SIM_TIME)
+# random.seed(RANDOM_SEED)
+# env = simpy.Environment()
+# doctors = simpy.PriorityResource(env, capacity=NUM_DOCTORS)
+# env.process(patient_arrival(env, doctors))
+# env.run(until=SIM_TIME)
 
-print("\n=== Simulation Results ===")
-for k, times in wait_times.items():
-    if times:
-        print(f"{k} average wait: {statistics.mean(times):.2f} minutes")
-total_time = NUM_DOCTORS * SIM_TIME
-print(f"Doctor utilization: {busy_time / total_time * 100:.2f}%")
+# print("\n=== Simulation Results ===")
+# for k, times in wait_times.items():
+#     if times:
+#         print(f"{k} average wait: {statistics.mean(times):.2f} minutes")
+# total_time = NUM_DOCTORS * SIM_TIME
+# print(f"Doctor utilization: {busy_time / total_time * 100:.2f}%")
 
+def interactive_er_simulation():
+    """Prompt the user for parameters and run the ER simulation."""
+    print("🏥 Hospital ER Simulation (Interactive Mode)")
+    print("Enter values below (press Enter to use defaults).")
+
+    # Collect user inputs
+    try:
+        num_doctors = int(input("Number of doctors [default=2]: ") or 2)
+        arrival_rate = float(input("Average arrival interval (minutes) [default=4]: ") or 4)
+        service_time = float(input("Average service time per patient (minutes) [default=10]: ") or 10)
+        sim_time = int(input("Total simulation time (minutes) [default=200]: ") or 200)
+    except ValueError:
+        print("Invalid input. Using defaults.")
+        num_doctors, arrival_rate, service_time, sim_time = 2, 4, 10, 200
+
+    print("\n⏳ Running simulation... please wait...\n")
+
+    random.seed(RANDOM_SEED)
+    env = simpy.Environment()
+    doctors = simpy.PriorityResource(env, capacity=num_doctors)
+    env.process(patient_arrival(env, doctors))
+    env.run(until=sim_time)
+
+    print("\n=== Simulation Results ===")
+    for k, times in wait_times.items():
+        if times:
+            print(f"{k} average wait: {statistics.mean(times):.2f} minutes")
+    total_time = num_doctors * sim_time
+    print(f"Doctor utilization: {busy_time / total_time * 100:.2f}%")
+    print(f"Total Doctor Busy time: {busy_time}")
+
+
+interactive_er_simulation()
