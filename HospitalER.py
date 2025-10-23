@@ -2,14 +2,17 @@ import simpy
 import random
 
 # Define basic simulation setup
-RANDOM_SEED = 42
+RANDOM_SEED = 42  # for fixed random sequence
 ARRIVAL_RATE = 5  # average time between patient arrivals
 SERVICE_TIME = 8  # average treatment time
 NUM_DOCTORS = 2
 SIM_TIME = 60
 
+""" 
+Patient Process
+arrival -> waiting -> treatment -> departure 
+"""
 def patient(env, name, doctors):
-    """Patient process: request a doctor, get treated, then leave."""
     arrival_time = env.now
     print(f"{name} arrives at {arrival_time:.2f}")
 
@@ -17,9 +20,15 @@ def patient(env, name, doctors):
         yield req
         wait = env.now - arrival_time
         print(f"{name} starts treatment at {env.now:.2f} after waiting {wait:.2f}")
-        yield env.timeout(random.expovariate(1.0 / SERVICE_TIME))
+        # Treatment takes a random duration, exponentially distributed with mean
+        yield env.timeout(random.expovariate(1.0 / SERVICE_TIME)) 
         print(f"{name} leaves at {env.now:.2f}")
 
+
+""" 
+Patient Arrival Generator
+Continuously creates new patient processes
+"""
 def patient_arrival(env, doctors):
     i = 0
     while True:
