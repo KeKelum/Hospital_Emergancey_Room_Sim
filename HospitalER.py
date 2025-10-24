@@ -1,6 +1,7 @@
 import simpy
 import random
 import statistics
+import matplotlib.pyplot as plt
 
 # Define basic simulation setup
 RANDOM_SEED = 42  # for fixed random sequence
@@ -98,6 +99,35 @@ def interactive_er_simulation():
     total_time = num_doctors * sim_time
     print(f"Doctor utilization: {busy_time / total_time * 100:.2f}%")
     print(f"Total Doctor Busy time: {busy_time}")
+
+    # Compute results
+    avg_waits = {}
+    for k, v in wait_times.items():
+        if v:
+            avg_waits[k] = statistics.mean(v)
+        else:
+            avg_waits[k] = 0
+
+    total_time = num_doctors * sim_time
+    utilization = busy_time / total_time * 100
+
+    # Bar chart - average waiting times
+    plt.figure(figsize=(8, 5))
+    plt.bar(avg_waits.keys(), avg_waits.values(), color=['red', 'orange', 'green'])
+    plt.title("Average Waiting Time per Patient Category")
+    plt.xlabel("Patient Type")
+    plt.ylabel("Average Wait (minutes)")
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.show()
+
+    # bar for doctor utilization
+    plt.figure(figsize=(6, 1.5))
+    plt.barh(["Doctor Utilization"], [utilization], color='skyblue')
+    plt.xlim(0, 100)
+    plt.title("Doctor Utilization (%)")
+    plt.xlabel("Percentage")
+    plt.grid(axis='x', linestyle='--', alpha=0.5)
+    plt.show()
 
 
 interactive_er_simulation()
