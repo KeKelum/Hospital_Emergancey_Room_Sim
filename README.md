@@ -3,25 +3,26 @@
 This project simulates the operation of a **hospital emergency room (ER)** using the **SimPy** discrete-event simulation library in Python.
 It models how patients with different priority levels (Critical, Serious, Minor) are treated by a limited number of doctors, and measures performance metrics like waiting times and doctor utilization.
 
-## System Components
+##  **System Components**
 
-**Patients**: Arrive randomly and are assigned one of three priorities:
-- Critical (highest priority)
-- Serious
-- Minor (lowest priority)
-**Doctors:** Shared resources that treat patients one at a time.
-**Simulation Logic**: Uses random arrival and service times to mimic real-world unpredictability.
-**Metrics Tracked**:
-- Average wait time per patient type
-- Total doctor busy time
-- Doctor utilization (%)
+- **Patients**: Arrive randomly and are assigned one of three priorities:
+    - _Critical_ (highest priority)
+    - Serious_        
+    - _Minor_ (lowest priority)        
+- **Doctors**: Shared resources that treat patients one at a time.    
+- **Simulation Logic**: Uses random arrival and service times to mimic real-world unpredictability.    
+- **Metrics Tracked**:    
+    - Average wait time per patient type        
+    - Total doctor busy time        
+    - Doctor utilization (%)
 
-  | Library      | Purpose                                        |
-| ------------ | ---------------------------------------------- |
-| `simpy`      | Event-based simulation framework               |
-| `random`     | Generates random arrival and service intervals |
-| `statistics` | Calculates mean wait times                     |
-| `matplotlib` | Generates plots for results visualization      |
+**Key Python Libraries**
+|Library|Purpose|
+|---|---|
+|`simpy`|Event-based simulation framework|
+|`random`|Generates random arrival and service intervals|
+|`statistics`|Calculates mean wait times|
+|`matplotlib`|Generates plots for results visualization|
 
 Install them (if not already installed):
 
