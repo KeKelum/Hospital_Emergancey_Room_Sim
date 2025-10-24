@@ -128,14 +128,14 @@ def visualize_results(avg_waits):
 # -----------------------------
 # SCENARIO COMPARISON
 # -----------------------------
-def scenario_analysis(priority_type):
+def scenario_analysis(priority_type, arrival_rate_plot=DEFAULT_ARRIVAL_RATE):
     """Run multiple simulations for different numbers of doctors and compare results."""
     scenarios = [2, 3, 4]
     avg_waits_all = []
 
     for d in scenarios:
         avg_waits, _, _ = run_simulation(num_doctors=d,
-                                         arrival_rate=DEFAULT_ARRIVAL_RATE,
+                                         arrival_rate=arrival_rate_plot,
                                          service_time=DEFAULT_SERVICE_TIME,
                                          sim_time=DEFAULT_SIM_TIME)
         avg_waits_all.append(avg_waits[priority_type])
@@ -151,9 +151,10 @@ def scenario_analysis(priority_type):
 
 # -----------------------------
 # Interactive mode
-# interactive_simulation()
+interactive_simulation()
 
 # scenario comparison
-scenario_analysis("Critical")
-scenario_analysis("Serious")
-scenario_analysis("Minor")
+# scenario_analysis("Critical")
+# scenario_analysis("Serious")
+# scenario_analysis("Minor")
+# scenario_analysis("Critical",10)
