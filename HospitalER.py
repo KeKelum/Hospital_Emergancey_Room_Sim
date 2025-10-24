@@ -3,114 +3,118 @@ import random
 import statistics
 import matplotlib.pyplot as plt
 
-# Define basic simulation setup
-RANDOM_SEED = 42  # for fixed random sequence
-ARRIVAL_RATE = 5  # average time between patient arrivals
-SERVICE_TIME = 10  # average treatment time
-NUM_DOCTORS = 2
-SIM_TIME = 200
 
-# Priority mapping
-PRIORITY_TYPES = {
-    "Critical": 1,
-    "Serious": 2,
-    "Minor": 3
-}
+# GLOBAL DEFAULT PARAMETERS
+RANDOM_SEED = 42
+DEFAULT_ARRIVAL_RATE = 5       # average time between patient arrivals
+DEFAULT_SERVICE_TIME = 10      # average treatment time
+DEFAULT_NUM_DOCTORS = 2
+DEFAULT_SIM_TIME = 200
 
-wait_times = {}
-for k in PRIORITY_TYPES.keys():
-    wait_times[k] = []
-busy_time = 0 # Total doctor working time
+# Priority levels: lower number = higher priority
+PRIORITY_TYPES = {"Critical": 1, "Serious": 2, "Minor": 3}
 
-""" 
-Patient Process
-arrival -> waiting -> treatment -> departure 
-"""
-def patient(env, name, doctors):
-    """
-    Patient with a priority requests treatment.
-    Weights [1, 2, 4] mean:
-    mostly minor cases, a few serious ones, and rare criticals.
-    """
-    global busy_time
-    priority_type = random.choices(list(PRIORITY_TYPES.keys()), weights=[1,2,4])[0]
+
+# -----------------------------
+# Patient Process
+# arrival -> waiting -> treatment -> departure 
+# -----------------------------
+def patient(env, name, doctors, service_time, wait_times, busy_time_ref):
+    priority_type = random.choices(list(PRIORITY_TYPES.keys()), weights=[1, 2, 4])[0]
     priority = PRIORITY_TYPES[priority_type]
     arrival_time = env.now
 
+    # Request a doctor according to priority
     with doctors.request(priority=priority) as req:
         yield req
+
+        # Record waiting time
         wait = env.now - arrival_time
         wait_times[priority_type].append(wait)
-        start = env.now
-        yield env.timeout(random.expovariate(1.0 / SERVICE_TIME))
-        busy_time += env.now - start
 
-""" 
-Patient Arrival Generator
-Continuously creates new patient processes
-"""
-def patient_arrival(env, doctors):
+        # Treatment (service time follows exponential distribution)
+        start = env.now
+        yield env.timeout(random.expovariate(1.0 / service_time))
+        busy_time_ref[0] += env.now - start
+
+
+# -----------------------------
+# Patient Arrival Generator
+# Continuously creates new patient processes
+# -----------------------------
+def patient_arrival(env, doctors, arrival_rate, service_time, wait_times, busy_time_ref):
+    """Generates patient arrivals at random intervals."""
     i = 0
     while True:
-        yield env.timeout(random.expovariate(1.0 / ARRIVAL_RATE))
+        yield env.timeout(random.expovariate(1.0 / arrival_rate))
         i += 1
-        env.process(patient(env, f"Patient {i}", doctors))
+        env.process(patient(env, f"Patient {i}", doctors, service_time, wait_times, busy_time_ref))
 
-# random.seed(RANDOM_SEED)
-# env = simpy.Environment()
-# doctors = simpy.PriorityResource(env, capacity=NUM_DOCTORS)
-# env.process(patient_arrival(env, doctors))
-# env.run(until=SIM_TIME)
 
-# print("\n=== Simulation Results ===")
-# for k, times in wait_times.items():
-#     if times:
-#         print(f"{k} average wait: {statistics.mean(times):.2f} minutes")
-# total_time = NUM_DOCTORS * SIM_TIME
-# print(f"Doctor utilization: {busy_time / total_time * 100:.2f}%")
-
-def interactive_er_simulation():
-    """Prompt the user for parameters and run the ER simulation."""
-    print("🏥 Hospital ER Simulation (Interactive Mode)")
-    print("Enter values below (press Enter to use defaults).")
-
-    # Collect user inputs
-    try:
-        num_doctors = int(input("Number of doctors [default=2]: ") or 2)
-        arrival_rate = float(input("Average arrival interval (minutes) [default=4]: ") or 4)
-        service_time = float(input("Average service time per patient (minutes) [default=10]: ") or 10)
-        sim_time = int(input("Total simulation time (minutes) [default=200]: ") or 200)
-    except ValueError:
-        print("Invalid input. Using defaults.")
-        num_doctors, arrival_rate, service_time, sim_time = 2, 4, 10, 200
-
-    print("\n⏳ Running simulation... please wait...\n")
-
+# -----------------------------
+# RUN SINGLE SIMULATION
+# -----------------------------
+def run_simulation(num_doctors, arrival_rate, service_time, sim_time):
+    """Run the ER simulation once and return performance metrics."""
     random.seed(RANDOM_SEED)
+
+    # Setup environment
     env = simpy.Environment()
     doctors = simpy.PriorityResource(env, capacity=num_doctors)
-    env.process(patient_arrival(env, doctors))
+    wait_times = {k: [] for k in PRIORITY_TYPES.keys()}
+    busy_time_ref = [0]  # use list for mutability in nested scope
+
+    # Start processes
+    env.process(patient_arrival(env, doctors, arrival_rate, service_time, wait_times, busy_time_ref))
     env.run(until=sim_time)
 
-    print("\n=== Simulation Results ===")
-    for k, times in wait_times.items():
-        if times:
-            print(f"{k} average wait: {statistics.mean(times):.2f} minutes")
-    total_time = num_doctors * sim_time
-    print(f"Doctor utilization: {busy_time / total_time * 100:.2f}%")
-    print(f"Total Doctor Busy time: {busy_time}")
-
     # Compute results
-    avg_waits = {}
-    for k, v in wait_times.items():
-        if v:
-            avg_waits[k] = statistics.mean(v)
-        else:
-            avg_waits[k] = 0
-
+    avg_waits = {k: (statistics.mean(v) if v else 0) for k, v in wait_times.items()}
     total_time = num_doctors * sim_time
-    utilization = busy_time / total_time * 100
+    utilization = busy_time_ref[0] / total_time * 100
 
+    return avg_waits, utilization, busy_time_ref[0]
+
+
+# -----------------------------
+# INTERACTIVE SIMULATION
+# -----------------------------
+def interactive_simulation():
+    """Prompt user for parameters, run the simulation, and show results + charts."""
+    print("Hospital ER Simulation")
+    print("Press Enter to use defaults.\n")
+
+    # User inputs
+    try:
+        num_doctors = int(input(f"Number of doctors [default={DEFAULT_NUM_DOCTORS}]: ") or DEFAULT_NUM_DOCTORS)
+        arrival_rate = float(input(f"Average arrival interval (minutes) [default={DEFAULT_ARRIVAL_RATE}]: ") or DEFAULT_ARRIVAL_RATE)
+        service_time = float(input(f"Average service time per patient (minutes) [default={DEFAULT_SERVICE_TIME}]: ") or DEFAULT_SERVICE_TIME)
+        sim_time = int(input(f"Total simulation time (minutes) [default={DEFAULT_SIM_TIME}]: ") or DEFAULT_SIM_TIME)
+    except ValueError:
+        print("Invalid input. Using default parameters.")
+        num_doctors, arrival_rate, service_time, sim_time = DEFAULT_NUM_DOCTORS, DEFAULT_ARRIVAL_RATE, DEFAULT_SERVICE_TIME, DEFAULT_SIM_TIME
+
+    print("\nRunning simulation... please wait...\n")
+
+    # Run simulation
+    avg_waits, utilization, busy_time = run_simulation(num_doctors, arrival_rate, service_time, sim_time)
+
+    # Display results
+    print("=== Simulation Results ===")
+    for k, avg in avg_waits.items():
+        print(f"{k} average wait: {avg:.2f} minutes")
+    print(f"Doctor utilization: {utilization:.2f}%")
+    print(f"Total doctor busy time: {busy_time:.2f} minutes\n")
+
+    # Visualize
+    visualize_results(avg_waits)
+
+
+# -----------------------------
+# VISUALIZATION
+# -----------------------------
+def visualize_results(avg_waits):
+    """Generate visualizations for waiting times and utilization."""
     # Bar chart - average waiting times
     plt.figure(figsize=(8, 5))
     plt.bar(avg_waits.keys(), avg_waits.values(), color=['red', 'orange', 'green'])
@@ -120,37 +124,36 @@ def interactive_er_simulation():
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.show()
 
-    # bar for doctor utilization
-    plt.figure(figsize=(6, 1.5))
-    plt.barh(["Doctor Utilization"], [utilization], color='skyblue')
-    plt.xlim(0, 100)
-    plt.title("Doctor Utilization (%)")
-    plt.xlabel("Percentage")
-    plt.grid(axis='x', linestyle='--', alpha=0.5)
+
+# -----------------------------
+# SCENARIO COMPARISON
+# -----------------------------
+def scenario_analysis(priority_type):
+    """Run multiple simulations for different numbers of doctors and compare results."""
+    scenarios = [2, 3, 4]
+    avg_waits_all = []
+
+    for d in scenarios:
+        avg_waits, _, _ = run_simulation(num_doctors=d,
+                                         arrival_rate=DEFAULT_ARRIVAL_RATE,
+                                         service_time=DEFAULT_SERVICE_TIME,
+                                         sim_time=DEFAULT_SIM_TIME)
+        avg_waits_all.append(avg_waits[priority_type])
+
+    # Plot comparison
+    plt.plot(scenarios, avg_waits_all, marker='o', color='purple')
+    plt.title(f"Effect of Number of Doctors on {priority_type} Case Wait Times")
+    plt.xlabel("Number of Doctors")
+    plt.ylabel("Average Wait (minutes)")
+    plt.grid(True)
     plt.show()
 
-""----------------------------------------------------------------------------------------------""
 
+# -----------------------------
+# Interactive mode
+# interactive_simulation()
 
-
-# interactive_er_simulation()
-
-scenarios = [2, 3, 4]
-avg_waits_all = []
-
-for d in scenarios:
-    random.seed(RANDOM_SEED)
-    env = simpy.Environment()
-    doctors = simpy.PriorityResource(env, capacity=d)
-    wait_times = {k: [] for k in PRIORITY_TYPES.keys()}
-    busy_time = 0
-    env.process(patient_arrival(env, doctors))
-    env.run(until=200)
-    avg_waits_all.append(statistics.mean(wait_times["Critical"]))
-
-plt.plot(scenarios, avg_waits_all, marker='o')
-plt.title("Effect of Number of Doctors on Minor Case Wait Times")
-plt.xlabel("Number of Doctors")
-plt.ylabel("Average Wait (minutes)")
-plt.grid(True)
-plt.show()
+# scenario comparison
+scenario_analysis("Critical")
+scenario_analysis("Serious")
+scenario_analysis("Minor")
