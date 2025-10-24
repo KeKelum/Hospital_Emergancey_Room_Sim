@@ -58,7 +58,8 @@ Minor average wait: 37.10 minutes
 Doctor utilization: 94.23%
 Total doctor busy time: 376.90 minutes
 ```
-<img width="800" height="500" alt="Figure_1" src="https://github.com/user-attachments/assets/ab4cd97f-38bb-4267-9302-1017c26435a3" />
+<img width="800" height="500" alt="Figure_1" src="https://github.com/user-attachments/assets/ab4cd97f-38bb-4267-9302-1017c26435a3" /> <br>
+
 ### **Scenario Testing**
 You can also run predefined experiments to study the impact of different configurations (Number of doctors):
 Example scenarios are given in the bottom of the code 
