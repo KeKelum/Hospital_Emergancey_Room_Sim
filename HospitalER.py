@@ -129,5 +129,28 @@ def interactive_er_simulation():
     plt.grid(axis='x', linestyle='--', alpha=0.5)
     plt.show()
 
+""----------------------------------------------------------------------------------------------""
 
-interactive_er_simulation()
+
+
+# interactive_er_simulation()
+
+scenarios = [2, 3, 4]
+avg_waits_all = []
+
+for d in scenarios:
+    random.seed(RANDOM_SEED)
+    env = simpy.Environment()
+    doctors = simpy.PriorityResource(env, capacity=d)
+    wait_times = {k: [] for k in PRIORITY_TYPES.keys()}
+    busy_time = 0
+    env.process(patient_arrival(env, doctors))
+    env.run(until=200)
+    avg_waits_all.append(statistics.mean(wait_times["Critical"]))
+
+plt.plot(scenarios, avg_waits_all, marker='o')
+plt.title("Effect of Number of Doctors on Minor Case Wait Times")
+plt.xlabel("Number of Doctors")
+plt.ylabel("Average Wait (minutes)")
+plt.grid(True)
+plt.show()
